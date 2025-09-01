@@ -1,0 +1,93 @@
+/**
+ * Kiosk Mode CSS Styles
+ * Add these to your photo-age-estimator.css file
+ */
+
+/* Kiosk Mode Styles */
+.age-estimator-kiosk-display {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    background: #000;
+    z-index: 50000;  /* Higher than banner (49998) */
+    overflow: hidden;
+}
+
+.age-estimator-kiosk-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* Ensure container has relative positioning for absolute kiosk display */
+.age-estimator-photo-container[data-kiosk-mode="true"] {
+    position: relative;
+}
+
+.age-estimator-photo-container[data-kiosk-mode="true"] .age-estimator-photo-camera {
+    position: relative;
+    min-height: 480px;
+    background: #000;
+}
+
+/* Fade transition for kiosk display */
+.age-estimator-kiosk-display {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.age-estimator-kiosk-display[style*="display: none"] {
+    opacity: 0;
+}
+
+.age-estimator-kiosk-display[style*="display: block"] {
+    opacity: 1;
+}
+
+/* Admin Panel Styles */
+.kiosk-settings {
+    margin-left: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-left: 3px solid #2271b1;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 10px;
+}
+
+.kiosk-image-preview {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+.kiosk-image-preview img {
+    max-width: 300px;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .age-estimator-kiosk-display {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50001;  /* Even higher on mobile */
+    }
+    
+    .kiosk-settings {
+        margin-left: 0;
+        border-left: none;
+        border-top: 3px solid #2271b1;
+    }
+}

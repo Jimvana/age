@@ -1,0 +1,1 @@
+cd /Users/video/DevKinsta/public/age-estimation/wp-content/plugins/Age-estimator-live && chmod +x implement-kiosk-banner-integration.sh && ./implement-kiosk-banner-integration.sh

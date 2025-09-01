@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banner Ad Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .debug-panel {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-active { background: #4CAF50; }
+        .status-inactive { background: #f44336; }
+        .status-unknown { background: #ffa500; }
+        
+        .debug-button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 4px;
+        }
+        .debug-button:hover {
+            background: #1976D2;
+        }
+        
+        .debug-log {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .test-results {
+            background: #f1f8e9;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Fullscreen Banner Ad Debug Test</h1>
+    
+    <div class="instructions">
+        <h3>📋 Testing Instructions:</h3>
+        <ol>
+            <li><strong>Navigate to your Age Estimator page</strong> (where the shortcode is displayed)</li>
+            <li><strong>Open browser developer tools</strong> (F12) and go to the Console tab</li>
+            <li><strong>Copy and paste this test script</strong> into the console</li>
+            <li><strong>Follow the test scenarios</strong> below to verify banner behavior</li>
+        </ol>
+    </div>
+
+    <div class="debug-panel">
+        <h3>🔧 Debug Test Script</h3>
+        <p>Copy this entire script and paste it into your browser console on the Age Estimator page:</p>
+        
+        <textarea style="width: 100%; height: 300px; font-family: monospace;" readonly>
+// Age Estimator Banner Ad Debug Script
+console.log('🎯 Starting Banner Ad Debug Test...');
+
+// Create debug panel
+function createDebugPanel() {
+    if (document.getElementById('banner-debug-panel')) return;
+    
+    const panel = document.createElement('div');
+    panel.id = 'banner-debug-panel';
+    panel.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 300px;
+        background: white;
+        border: 2px solid #2196F3;
+        border-radius: 8px;
+        padding: 15px;
+        z-index: 99999;
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    `;
+    
+    panel.innerHTML = `
+        <h3 style="margin: 0 0 10px 0; color: #2196F3;">🎯 Banner Debug</h3>
+        <div id="debug-status"></div>
+        <div style="margin-top: 10px;">
+            <button onclick="debugBannerTest()" style="background: #4CAF50; color: white; border: none; padding: 4px 8px; border-radius: 4px; margin: 2px; cursor: pointer;">Test Banner</button>
+            <button onclick="debugCameraCheck()" style="background: #FF9800; color: white; border: none; padding: 4px 8px; border-radius: 4px; margin: 2px; cursor: pointer;">Check Camera</button>
+            <button onclick="debugToggleFullscreen()" style="background: #9C27B0; color: white; border: none; padding: 4px 8px; border-radius: 4px; margin: 2px; cursor: pointer;">Toggle Fullscreen</button>
+            <button onclick="debugForceShow()" style="background: #F44336; color: white; border: none; padding: 4px 8px; border-radius: 4px; margin: 2px; cursor: pointer;">Force Show</button>
+        </div>
+        <div style="margin-top: 8px;">
+            <button onclick="document.getElementById('banner-debug-panel').remove()" style="background: #666; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Close</button>
+        </div>
+    `;
+    
+    document.body.appendChild(panel);
+}
+
+// Update debug status
+function updateDebugStatus() {
+    const statusDiv = document.getElementById('debug-status');
+    if (!statusDiv) return;
+    
+    const bannerAd = window.ageEstimatorBannerAd;
+    if (!bannerAd) {
+        statusDiv.innerHTML = '<div style="color: red;">❌ Banner Ad not initialized</div>';
+        return;
+    }
+    
+    const state = bannerAd.getState();
+    const cameraStatus = state.isCameraActive ? '🟢' : '🔴';
+    const fullscreenStatus = state.isFullscreen ? '🟢' : '🔴';
+    const bannerStatus = state.bannerVisible ? '🟢' : '🔴';
+    
+    statusDiv.innerHTML = `
+        <div>${cameraStatus} Camera: ${state.isCameraActive ? 'Active' : 'Inactive'}</div>
+        <div>${fullscreenStatus} Fullscreen: ${state.isFullscreen ? 'Active' : 'Inactive'}</div>
+        <div>${bannerStatus} Banner: ${state.bannerVisible ? 'Visible' : 'Hidden'}</div>
+        <div style="font-size: 10px; color: #666; margin-top: 5px;">
+            Video: ${state.videoElement ? (state.videoElement.hasStream ? 'Stream OK' : 'No Stream') : 'Not Found'}
+        </div>
+    `;
+}
+
+// Test functions
+window.debugBannerTest = function() {
+    console.log('🧪 Running Banner Ad Test...');
+    const result = window.debugBannerAd ? window.debugBannerAd() : 'Debug function not available';
+    console.log('Test Result:', result);
+    updateDebugStatus();
+};
+
+window.debugCameraCheck = function() {
+    console.log('📷 Checking Camera State...');
+    if (window.ageEstimatorBannerAd) {
+        const state = window.ageEstimatorBannerAd.forceCameraCheck();
+        console.log('Camera Check Result:', state);
+    }
+    updateDebugStatus();
+};
+
+window.debugToggleFullscreen = function() {
+    console.log('🖥️ Toggling Fullscreen...');
+    if (window.ageEstimatorBannerAd) {
+        window.ageEstimatorBannerAd.toggleFullscreen();
+    }
+    setTimeout(updateDebugStatus, 500);
+};
+
+window.debugForceShow = function() {
+    console.log('💪 Force Showing Banner...');
+    if (window.ageEstimatorBannerAd) {
+        window.ageEstimatorBannerAd.setVisible(true);
+    }
+    setTimeout(updateDebugStatus, 500);
+};
+
+// Create the debug panel
+createDebugPanel();
+
+// Update status every second
+setInterval(updateDebugStatus, 1000);
+
+// Initial status update
+setTimeout(updateDebugStatus, 100);
+
+console.log('✅ Debug panel created! Look for the blue panel in the top-right corner.');
+console.log('🎯 Available debug functions: debugBannerTest(), debugCameraCheck(), debugToggleFullscreen(), debugForceShow()');
+</textarea>
+    </div>
+
+    <div class="debug-panel">
+        <h3>📋 Test Scenarios</h3>
+        
+        <h4>Scenario 1: Normal Operation</h4>
+        <ol>
+            <li>Start the camera by clicking "Start Monitoring"</li>
+            <li>Check that camera status shows "Active" in debug panel</li>
+            <li>Enter fullscreen mode (double-click camera or use fullscreen button)</li>
+            <li><strong>✅ Expected:</strong> Banner should appear at bottom/top of screen</li>
+            <li>Exit fullscreen (ESC key)</li>
+            <li><strong>✅ Expected:</strong> Banner should disappear</li>
+        </ol>
+        
+        <h4>Scenario 2: Camera Inactive</h4>
+        <ol>
+            <li>Do NOT start the camera (leave it stopped)</li>
+            <li>Try to enter fullscreen mode</li>
+            <li><strong>✅ Expected:</strong> Banner should NOT appear (camera not active)</li>
+        </ol>
+        
+        <h4>Scenario 3: Camera Stop During Fullscreen</h4>
+        <ol>
+            <li>Start camera and enter fullscreen</li>
+            <li>Banner should be visible</li>
+            <li>Stop the camera while in fullscreen</li>
+            <li><strong>✅ Expected:</strong> Banner should disappear immediately</li>
+        </ol>
+        
+        <h4>Scenario 4: Manual Testing</h4>
+        <ol>
+            <li>Use the debug panel buttons to test individual components</li>
+            <li>Click "Check Camera" to verify camera state detection</li>
+            <li>Click "Test Banner" to run comprehensive state check</li>
+            <li>Click "Force Show" to override and show banner (for testing positioning)</li>
+        </ol>
+    </div>
+
+    <div class="debug-panel">
+        <h3>🐛 Troubleshooting</h3>
+        
+        <h4>Banner Not Appearing:</h4>
+        <ul>
+            <li>Check that banner ad is enabled in Age Estimator settings</li>
+            <li>Verify banner image URL is accessible</li>
+            <li>Ensure both camera AND fullscreen are active</li>
+            <li>Check browser console for JavaScript errors</li>
+        </ul>
+        
+        <h4>Banner Appearing When It Shouldn't:</h4>
+        <ul>
+            <li>Check camera state detection logic</li>
+            <li>Verify video element monitoring is working</li>
+            <li>Look for timing issues with state changes</li>
+        </ul>
+        
+        <h4>Banner Position Issues:</h4>
+        <ul>
+            <li>Check CSS z-index values</li>
+            <li>Verify fullscreen container styles</li>
+            <li>Test on different screen sizes</li>
+        </ul>
+    </div>
+
+    <div class="test-results">
+        <h3>✅ Expected Results Summary</h3>
+        <ul>
+            <li><strong>Banner SHOULD appear</strong> when: Camera is active AND fullscreen mode is on</li>
+            <li><strong>Banner should NOT appear</strong> when: Camera is inactive OR not in fullscreen</li>
+            <li><strong>Banner should disappear</strong> when: Camera stops OR fullscreen exits</li>
+            <li><strong>Banner should be positioned</strong> over the camera view without blocking important content</li>
+        </ul>
+    </div>
+
+    <script>
+        // Add some interactive features to this debug page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 Banner Ad Debug Test page loaded');
+            console.log('👆 Copy the test script above and run it on your Age Estimator page');
+        });
+    </script>
+</body>
+</html>

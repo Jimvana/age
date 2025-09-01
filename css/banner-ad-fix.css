@@ -1,0 +1,84 @@
+/**
+ * Enhanced Banner Ad CSS - Higher Specificity
+ * Fixes potential z-index and visibility issues
+ */
+
+/* IMPORTANT: Force banner visibility with higher specificity */
+.age-estimator-photo-container .age-estimator-banner-ad {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 99999 !important; /* Higher than other elements */
+    display: none !important;
+    pointer-events: auto !important;
+    transition: all 0.3s ease-in-out !important;
+    width: 100% !important;
+}
+
+/* Banner positioning with higher specificity */
+.age-estimator-photo-container .age-estimator-banner-ad.position-bottom {
+    bottom: 0 !important;
+}
+
+.age-estimator-photo-container .age-estimator-banner-ad.position-top {
+    top: 0 !important;
+}
+
+/* Force banner to show in fullscreen with maximum specificity */
+.age-estimator-photo-container:-webkit-full-screen .age-estimator-banner-ad,
+.age-estimator-photo-container:-moz-full-screen .age-estimator-banner-ad,
+.age-estimator-photo-container:fullscreen .age-estimator-banner-ad,
+:-webkit-full-screen .age-estimator-banner-ad,
+:-moz-full-screen .age-estimator-banner-ad,
+:fullscreen .age-estimator-banner-ad {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Banner link and image styling with higher specificity */
+.age-estimator-photo-container .age-estimator-banner-link {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    text-decoration: none !important;
+}
+
+.age-estimator-photo-container .age-estimator-banner-image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+    transition: opacity 0.2s ease !important;
+}
+
+/* Debug mode - add red border to see banner area */
+.age-estimator-debug .age-estimator-banner-ad {
+    border: 3px solid #ff0000 !important;
+    background-color: rgba(255, 0, 0, 0.3) !important;
+    z-index: 999999 !important;
+}
+
+/* Override any conflicting styles */
+.age-estimator-banner-ad {
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+/* Force show for testing (comment out after testing) */
+/*
+.age-estimator-banner-ad.force-show {
+    display: block !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 999999 !important;
+    background: rgba(255, 0, 0, 0.5) !important;
+    height: 100px !important;
+}
+*/

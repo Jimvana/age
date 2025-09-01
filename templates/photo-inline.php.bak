@@ -1,0 +1,306 @@
+<?php
+/**
+ * Template for Age Estimator Live - Clean Modern UI
+ * Enhanced with proper banner ad positioning
+ */
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
+?>
+
+<div class="age-estimator-photo-container age-estimator-photo-fullscreen canvas-banner-active canvas-banner-active <?php echo esc_attr($atts['class']); ?>" 
+     data-mode="<?php echo esc_attr(get_option('age_estimator_mode', 'simple')); ?>" 
+     data-continuous="true"
+     data-display-style="fullscreen"
+     data-kiosk-mode="<?php echo get_option('age_estimator_kiosk_mode', false) ? 'true' : 'false'; ?>"
+     data-kiosk-image="<?php echo esc_url(get_option('age_estimator_kiosk_image', '')); ?>"
+     data-kiosk-display-time="<?php echo esc_attr(get_option('age_estimator_kiosk_display-time', 5)); ?>">
+    
+    <!-- Fullscreen mode indicator -->
+    <!-- Canvas Banner Status (Debug) -->
+    <div class="canvas-banner-status" id="canvas-banner-status">
+        Canvas Banner: Ready
+    </div>
+    <div class="age-estimator-fullscreen-indicator" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(33, 150, 243, 0.9); color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; z-index: 1000;">
+        <span>🖥️ Fullscreen Mode Active</span>
+    </div>
+    
+    <!-- BANNER AD - MOVED OUTSIDE CAMERA CONTAINER FOR PROPER POSITIONING -->
+    <?php if (get_option('age_estimator_enable_banner_ad', false) && get_option('age_estimator_banner_ad_image', '')): ?>
+        <div id="age-estimator-banner-ad" class="age-estimator-banner-ad" style="display: none;">
+            <?php 
+            $banner_link = get_option('age_estimator_banner_ad_link', '');
+            $banner_image = get_option('age_estimator_banner_ad_image', '');
+            $banner_height = get_option('age_estimator_banner_ad_height', 100);
+            $banner_position = get_option('age_estimator_banner_ad_position', 'bottom');
+            $banner_opacity = get_option('age_estimator_banner_ad_opacity', 0.9);
+            
+            if (!empty($banner_link)): ?>
+                <a href="<?php echo esc_url($banner_link); ?>" target="_blank" rel="noopener noreferrer" class="age-estimator-banner-link">
+                    <img src="<?php echo esc_url($banner_image); ?>" 
+                         alt="<?php _e('Advertisement', 'age-estimator'); ?>" 
+                         class="age-estimator-banner-image"
+                         data-height="<?php echo esc_attr($banner_height); ?>"
+                         data-position="<?php echo esc_attr($banner_position); ?>"
+                         data-opacity="<?php echo esc_attr($banner_opacity); ?>" />
+                </a>
+            <?php else: ?>
+                <img src="<?php echo esc_url($banner_image); ?>" 
+                     alt="<?php _e('Advertisement', 'age-estimator'); ?>" 
+                     class="age-estimator-banner-image"
+                     data-height="<?php echo esc_attr($banner_height); ?>"
+                     data-position="<?php echo esc_attr($banner_position); ?>"
+                     data-opacity="<?php echo esc_attr($banner_opacity); ?>" />
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+    
+    <?php 
+    // Display logo if enabled
+    $use_logo = get_option('age_estimator_use_logo', false);
+    $logo_url = get_option('age_estimator_logo_url', '');
+    $logo_height = get_option('age_estimator_logo_height', 40);
+    
+    if ($use_logo && !empty($logo_url)) {
+        ?>
+        <div class="age-estimator-logo-container" style="text-align: center; margin-bottom: 20px;">
+            <img src="<?php echo esc_url($logo_url); ?>" 
+                 alt="<?php _e('Logo', 'age-estimator'); ?>" 
+                 style="max-height: <?php echo esc_attr($logo_height); ?>px; width: auto; display: inline-block;" 
+                 class="age-estimator-logo" />
+        </div>
+        <?php
+    }
+    ?>
+    
+    <div id="age-estimator-photo-camera" class="age-estimator-photo-camera">
+        <div class="age-estimator-photo-camera-placeholder">
+            <!-- Placeholder removed to fix camera display -->
+        </div>
+        
+        <!-- Kiosk Mode Ad Display -->
+        <div id="age-estimator-kiosk-display" class="age-estimator-kiosk-display" style="display: none;">
+            <?php if (get_option('age_estimator_kiosk_mode', false) && get_option('age_estimator_kiosk_image', '')): ?>
+                <img src="<?php echo esc_url(get_option('age_estimator_kiosk_image')); ?>" 
+                     alt="<?php _e('Advertisement', 'age-estimator'); ?>" 
+                     class="age-estimator-kiosk-image" />
+            <?php endif; ?>
+        </div>
+        
+        <!-- Video element for camera feed -->
+        <video id="age-estimator-photo-video" style="display: none;" autoplay playsinline></video>
+        
+        <!-- Canvas for capturing photo -->
+        <canvas id="age-estimator-photo-canvas" style="display: none;"></canvas>
+        
+        <!-- Overlay canvas for results -->
+        <canvas id="age-estimator-photo-overlay" style="display: none;"></canvas>
+        
+        <!-- Photo preview (hidden) -->
+        <img id="age-estimator-photo-preview" style="display: none;" alt="<?php _e('Captured photo', 'age-estimator'); ?>">
+    </div>
+    
+    <div class="age-estimator-photo-controls">
+        <button id="age-estimator-photo-start-camera" class="age-estimator-photo-button primary">
+            🖥️ <?php echo esc_html($atts['button_text']); ?> (Fullscreen)
+        </button>
+        
+        <button id="age-estimator-photo-stop-camera" class="age-estimator-photo-button danger" style="display: none;">
+            ⏹️ <?php _e('Stop Monitor', 'age-estimator'); ?>
+        </button>
+        
+        <!-- Fullscreen toggle button -->
+        <button id="age-estimator-fullscreen-toggle" class="age-estimator-photo-button secondary" style="display: none; margin-left: 10px;">
+            ⛶ <?php _e('Enter Fullscreen', 'age-estimator'); ?>
+        </button>
+    </div>
+    
+    <div id="age-estimator-photo-loading" class="age-estimator-photo-loading" style="display: none;">
+        <div class="spinner"></div>
+        <p><?php _e('Analyzing...', 'age-estimator'); ?></p>
+    </div>
+    
+    <div id="age-estimator-photo-result" class="age-estimator-photo-result">
+        <!-- Results will be displayed here -->
+    </div>
+    
+    <!-- Fullscreen enhancement notice -->
+    <div class="age-estimator-fullscreen-notice" style="margin-top: 15px; padding: 12px; background: #e7f3ff; border: 1px solid #2196f3; border-radius: 4px; font-size: 14px; text-align: center;">
+        <strong>🖥️ <?php _e('Fullscreen Mode:', 'age-estimator'); ?></strong> 
+        <?php _e('This Age Estimator is optimized for fullscreen experience. Double-click the camera area or use the fullscreen button for the best results.', 'age-estimator'); ?>
+    </div>
+</div>
+
+<style>
+/* Fullscreen mode enhancements */
+.age-estimator-photo-fullscreen {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.age-estimator-photo-fullscreen:hover {
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* CRITICAL: Ensure banner has proper z-index and positioning */
+.age-estimator-banner-ad {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 99999 !important;
+    pointer-events: auto !important;
+}
+
+/* Fullscreen styles */
+.age-estimator-photo-container:-webkit-full-screen {
+    width: 100vw !important;
+    height: 100vh !important;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.age-estimator-photo-container:-moz-full-screen {
+    width: 100vw !important;
+    height: 100vh !important;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.age-estimator-photo-container:fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Show fullscreen indicator when in fullscreen */
+.age-estimator-photo-container:-webkit-full-screen .age-estimator-fullscreen-indicator,
+.age-estimator-photo-container:-moz-full-screen .age-estimator-fullscreen-indicator,
+.age-estimator-photo-container:fullscreen .age-estimator-fullscreen-indicator {
+    display: block !important;
+}
+
+/* Hide the notice in fullscreen */
+.age-estimator-photo-container:-webkit-full-screen .age-estimator-fullscreen-notice,
+.age-estimator-photo-container:-moz-full-screen .age-estimator-fullscreen-notice,
+.age-estimator-photo-container:fullscreen .age-estimator-fullscreen-notice {
+    display: none !important;
+}
+
+/* Style video and canvas for fullscreen */
+.age-estimator-photo-container:-webkit-full-screen #age-estimator-photo-video,
+.age-estimator-photo-container:-moz-full-screen #age-estimator-photo-video,
+.age-estimator-photo-container:fullscreen #age-estimator-photo-video {
+    max-width: 90vw;
+    max-height: 70vh;
+    object-fit: contain;
+}
+
+/* Ensure banner appears in fullscreen when both conditions are met */
+.age-estimator-photo-container:-webkit-full-screen .age-estimator-banner-ad.show-banner,
+.age-estimator-photo-container:-moz-full-screen .age-estimator-banner-ad.show-banner,
+.age-estimator-photo-container:fullscreen .age-estimator-banner-ad.show-banner {
+    display: block !important;
+    position: fixed !important;
+    z-index: 99999 !important;
+}
+</style>
+
+<script>
+jQuery(document).ready(function($) {
+    console.log('🖥️ Age Estimator: Fullscreen-only mode initialized');
+    
+    let container = $('.age-estimator-photo-container')[0];
+    let fullscreenAvailable = false;
+    
+    if (container) {
+        // Check if fullscreen is supported
+        fullscreenAvailable = !!(container.requestFullscreen || 
+                               container.webkitRequestFullscreen || 
+                               container.mozRequestFullScreen || 
+                               container.msRequestFullscreen);
+        
+        if (fullscreenAvailable) {
+            $('#age-estimator-fullscreen-toggle').show();
+            
+            // Add double-click to camera area for fullscreen
+            $('#age-estimator-photo-camera').on('dblclick', function() {
+                toggleFullscreen();
+            }).attr('title', 'Double-click to toggle fullscreen mode');
+            
+            // Add fullscreen button click handler
+            $('#age-estimator-fullscreen-toggle').on('click', function() {
+                toggleFullscreen();
+            });
+            
+            // Monitor fullscreen changes
+            $(document).on('fullscreenchange webkitfullscreenchange mozfullscreenchange MSFullscreenChange', function() {
+                updateFullscreenButton();
+            });
+        }
+    }
+    
+    function toggleFullscreen() {
+        if (!document.fullscreenElement && 
+            !document.webkitFullscreenElement && 
+            !document.mozFullScreenElement && 
+            !document.msFullscreenElement) {
+            
+            // Enter fullscreen
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.mozRequestFullScreen) {
+                container.mozRequestFullScreen();
+            } else if (container.msRequestFullscreen) {
+                container.msRequestFullscreen();
+            }
+        } else {
+            // Exit fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+    }
+    
+    function updateFullscreenButton() {
+        const isFullscreen = !!(document.fullscreenElement || 
+                              document.webkitFullscreenElement || 
+                              document.mozFullScreenElement || 
+                              document.msFullscreenElement);
+        
+        $('#age-estimator-fullscreen-toggle').text(
+            isFullscreen ? '⛶ Exit Fullscreen' : '⛶ Enter Fullscreen'
+        );
+    }
+});
+</script>

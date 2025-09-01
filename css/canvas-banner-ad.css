@@ -1,0 +1,347 @@
+/**
+ * Canvas Banner Ad Styles
+ * Age Estimator Live Plugin
+ * Canvas overlay version for better camera integration
+ */
+
+/* Canvas banner container styling */
+#age-estimator-banner-canvas {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 49998 !important;  /* Lower than kiosk (50000) */
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Enable pointer events when banner has a link */
+#age-estimator-banner-canvas.clickable {
+    pointer-events: auto !important;
+    cursor: pointer;
+}
+
+/* Camera container needs relative positioning for canvas overlay */
+#age-estimator-photo-camera {
+    position: relative !important;
+}
+
+/* Ensure video element is properly positioned under canvas */
+#age-estimator-photo-video {
+    position: relative;
+    z-index: 1;
+}
+
+/* Canvas banner overlay sits on top of video */
+#age-estimator-photo-camera #age-estimator-banner-canvas {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 10 !important;
+}
+
+/* Fullscreen canvas banner adjustments */
+.age-estimator-photo-container:-webkit-full-screen #age-estimator-banner-canvas,
+.age-estimator-photo-container:-moz-full-screen #age-estimator-banner-canvas,
+.age-estimator-photo-container:fullscreen #age-estimator-banner-canvas {
+    position: absolute !important;
+    z-index: 49998 !important;  /* Lower than kiosk (50000) */
+}
+
+/* Ensure camera container maintains proper layout in fullscreen */
+.age-estimator-photo-container:-webkit-full-screen #age-estimator-photo-camera,
+.age-estimator-photo-container:-moz-full-screen #age-estimator-photo-camera,
+.age-estimator-photo-container:fullscreen #age-estimator-photo-camera {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Video styling in fullscreen with canvas overlay */
+.age-estimator-photo-container:-webkit-full-screen #age-estimator-photo-video,
+.age-estimator-photo-container:-moz-full-screen #age-estimator-photo-video,
+.age-estimator-photo-container:fullscreen #age-estimator-photo-video {
+    max-width: 90vw !important;
+    max-height: 90vh !important;
+    object-fit: contain !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Canvas should match video dimensions in fullscreen */
+.age-estimator-photo-container:-webkit-full-screen #age-estimator-banner-canvas,
+.age-estimator-photo-container:-moz-full-screen #age-estimator-banner-canvas,
+.age-estimator-photo-container:fullscreen #age-estimator-banner-canvas {
+    max-width: 90vw !important;
+    max-height: 90vh !important;
+}
+
+/* Debug mode styling for canvas banner */
+.age-estimator-debug #age-estimator-banner-canvas {
+    border: 2px dashed #00ff00 !important;
+    background-color: rgba(0, 255, 0, 0.1) !important;
+}
+
+/* Status indicator for canvas banner */
+.canvas-banner-status {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(33, 150, 243, 0.9);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    z-index: 10001;
+    display: none;
+}
+
+.age-estimator-debug .canvas-banner-status {
+    display: block;
+}
+
+/* Hide original banner element when using canvas version */
+.canvas-banner-active #age-estimator-banner-ad {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Canvas banner hover effects (when clickable) */
+#age-estimator-banner-canvas.clickable:hover {
+    opacity: 0.8;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+/* Responsive adjustments for canvas banner */
+@media (max-width: 768px) {
+    #age-estimator-banner-canvas {
+        position: absolute !important;
+    }
+    
+    /* Adjust canvas size for mobile fullscreen */
+    .age-estimator-photo-container:-webkit-full-screen #age-estimator-banner-canvas,
+    .age-estimator-photo-container:-moz-full-screen #age-estimator-banner-canvas,
+    .age-estimator-photo-container:fullscreen #age-estimator-banner-canvas {
+        max-width: 95vw !important;
+        max-height: 85vh !important;
+    }
+    
+    .age-estimator-photo-container:-webkit-full-screen #age-estimator-photo-video,
+    .age-estimator-photo-container:-moz-full-screen #age-estimator-photo-video,
+    .age-estimator-photo-container:fullscreen #age-estimator-photo-video {
+        max-width: 95vw !important;
+        max-height: 85vh !important;
+    }
+}
+
+/* Performance optimizations for canvas */
+#age-estimator-banner-canvas {
+    image-rendering: optimizeQuality;
+    -ms-interpolation-mode: bicubic;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    #age-estimator-banner-canvas {
+        transition: none;
+    }
+    
+    #age-estimator-banner-canvas.clickable:hover {
+        transform: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .age-estimator-debug #age-estimator-banner-canvas {
+        border-width: 3px !important;
+    }
+}
+
+/* Print styles - hide canvas banner */
+@media print {
+    #age-estimator-banner-canvas {
+        display: none !important;
+    }
+}
+
+/* Loading state for canvas banner */
+.canvas-banner-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 12px;
+    z-index: 10002;
+    display: none;
+}
+
+.canvas-banner-loading.show {
+    display: block;
+}
+
+/* Animation for canvas banner appearance */
+@keyframes canvasBannerFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes canvasBannerFadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+#age-estimator-banner-canvas.entering {
+    animation: canvasBannerFadeIn 0.5s ease-out forwards;
+}
+
+#age-estimator-banner-canvas.exiting {
+    animation: canvasBannerFadeOut 0.3s ease-in forwards;
+}
+
+/* Visual feedback for canvas banner states */
+.age-estimator-photo-container[data-canvas-banner="active"] #age-estimator-photo-camera {
+    border: 2px solid #4CAF50;
+}
+
+.age-estimator-photo-container[data-canvas-banner="waiting"] #age-estimator-photo-camera {
+    border: 2px solid #FFA500;
+}
+
+.age-estimator-photo-container[data-canvas-banner="hidden"] #age-estimator-photo-camera {
+    border: 2px solid #ccc;
+}
+
+/* Canvas banner click area visualization (debug mode) */
+.age-estimator-debug .canvas-banner-click-area {
+    position: absolute;
+    border: 2px dashed #ff0000;
+    background: rgba(255, 0, 0, 0.2);
+    pointer-events: none;
+    z-index: 10003;
+}
+
+/* Overlay message for canvas banner info */
+.canvas-banner-info {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    z-index: 10001;
+    display: none;
+}
+
+.age-estimator-debug .canvas-banner-info {
+    display: block;
+}
+
+/* Ensure canvas is properly layered */
+.age-estimator-photo-camera canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Specific layering for different canvases */
+#age-estimator-photo-canvas {
+    z-index: 1; /* Main photo canvas */
+}
+
+#age-estimator-photo-overlay {
+    z-index: 5; /* Detection overlay canvas */
+}
+
+#age-estimator-banner-canvas {
+    z-index: 10; /* Banner canvas on top */
+}
+
+/* Container for all canvas elements */
+.age-estimator-canvas-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Smooth transitions between banner states */
+.canvas-banner-transition {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Error state styling */
+.canvas-banner-error {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(244, 67, 54, 0.9);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    z-index: 10002;
+    display: none;
+}
+
+.canvas-banner-error.show {
+    display: block;
+}
+
+/* Canvas banner controls (for testing/debugging) */
+.canvas-banner-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    display: none;
+    z-index: 10004;
+}
+
+.age-estimator-debug .canvas-banner-controls {
+    display: block;
+}
+
+.canvas-banner-controls button {
+    background: #2196F3;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin: 2px;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.canvas-banner-controls button:hover {
+    background: #1976D2;
+}
+
+/* Ensure proper stacking context in different scenarios */
+.age-estimator-photo-container {
+    isolation: isolate;
+}
+
+#age-estimator-photo-camera {
+    position: relative;
+    isolation: isolate;
+}

@@ -1,0 +1,244 @@
+<?php
+/**
+ * Fixed version of the process_emails_by_frequency method
+ * Add this to your theme's functions.php or as a mu-plugin
+ */
+
+// Exit if accessed directly or if Age Estimator plugin is not active
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// Check if the Age Estimator plugin is active
+if (!defined('AGE_ESTIMATOR_VERSION')) {
+    return;
+}
+
+// Hook to modify the emailer behavior
+add_action('plugins_loaded', function() {
+    // Wait for the plugin to load its includes
+    add_action('init', function() {
+        // Check if the class exists before trying to use it
+        if (class_exists('AgeEstimatorComplianceEmailer')) {
+            // Remove the original cron handler
+            remove_action('age_estimator_send_daily_compliance_emails', array(AgeEstimatorComplianceEmailer::get_instance(), 'send_daily_emails'));
+        }
+        
+        // Add our fixed handler
+        add_action('age_estimator_send_daily_compliance_emails', 'age_estimator_fixed_send_daily_emails');
+    });
+}, 20);
+
+function age_estimator_fixed_send_daily_emails() {
+    global $wpdb;
+    
+    // Check if emails are enabled
+    $send_emails = get_option('age_estimator_send_compliance_emails', 'yes');
+    if ($send_emails !== 'yes') {
+        return;
+    }
+    
+    // Get today's date
+    $today = current_time('Y-m-d');
+    
+    // Query the compliance checks table instead of API calls
+    $table_name = $wpdb->prefix . 'age_estimator_checks';
+    
+    // Get all users who had compliance checks today
+    $user_checks = $wpdb->get_results($wpdb->prepare(
+        "SELECT DISTINCT user_id, COUNT(*) as check_count, staff_member 
+         FROM {$table_name} 
+         WHERE DATE(check_time) = %s 
+         GROUP BY user_id, staff_member",
+        $today
+    ));
+    
+    $emails_sent = 0;
+    
+    foreach ($user_checks as $check) {
+        // Try to identify the user
+        $user = null;
+        $user_email = null;
+        
+        if ($check->user_id > 0) {
+            // Registered user
+            $user = get_user_by('ID', $check->user_id);
+            if ($user) {
+                $user_email = $user->user_email;
+            }
+        } else if (!empty($check->staff_member)) {
+            // Try to find user by display name or login
+            $users = get_users(array(
+                'search' => $check->staff_member,
+                'search_columns' => array('display_name', 'user_login', 'user_nicename')
+            ));
+            
+            if (!empty($users)) {
+                $user = $users[0];
+                $user_email = $user->user_email;
+            }
+        }
+        
+        // If we found a user with email, send the compliance report
+        if ($user && $user_email) {
+            // Get detailed logs for this user
+            $detailed_logs = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$table_name} 
+                 WHERE DATE(check_time) = %s 
+                 AND (user_id = %d OR staff_member = %s)
+                 ORDER BY check_time DESC",
+                $today,
+                $user->ID,
+                $user->display_name
+            ), ARRAY_A);
+            
+            // Prepare stats
+            $stats = array(
+                'total_calls' => count($detailed_logs),
+                'total_faces' => count($detailed_logs),
+                'successful_calls' => 0,
+                'failed_calls' => 0
+            );
+            
+            // Count successes and failures based on alert level
+            foreach ($detailed_logs as $log) {
+                if ($log['alert_level'] == 'Pass' || $log['alert_level'] == 'Green') {
+                    $stats['successful_calls']++;
+                } else {
+                    $stats['failed_calls']++;
+                }
+            }
+            
+            // Send email
+            $sent = age_estimator_send_compliance_email_fixed($user, $stats, $detailed_logs, $today);
+            
+            if ($sent) {
+                $emails_sent++;
+            }
+        }
+    }
+    
+    // Log the email batch
+    $log_entry = array(
+        'date' => $today,
+        'count' => $emails_sent,
+        'timestamp' => current_time('mysql')
+    );
+    
+    $email_logs = get_option('age_estimator_email_logs', array());
+    array_unshift($email_logs, $log_entry);
+    $email_logs = array_slice($email_logs, 0, 30);
+    update_option('age_estimator_email_logs', $email_logs);
+    
+    return $emails_sent;
+}
+
+function age_estimator_send_compliance_email_fixed($user, $stats, $detailed_logs, $date) {
+    $site_name = get_bloginfo('name');
+    $site_url = get_site_url();
+    $formatted_date = date_i18n(get_option('date_format'), strtotime($date));
+    
+    // Prepare email subject
+    $subject = sprintf(
+        __('Your %s Age Verification Compliance Report - %s', 'age-estimator'),
+        $site_name,
+        $formatted_date
+    );
+    
+    // Prepare email body
+    ob_start();
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title><?php echo esc_html($site_name); ?> Compliance Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+            .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+            .stat-box { background: #fff; padding: 15px; border-radius: 5px; text-align: center; border: 1px solid #e9ecef; }
+            .stat-number { font-size: 28px; font-weight: bold; color: #007bff; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { padding: 10px; text-align: left; border-bottom: 1px solid #dee2e6; }
+            th { background: #f8f9fa; }
+            .pass { color: #28a745; }
+            .fail { color: #dc3545; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1><?php echo esc_html($site_name); ?> Age Verification Report</h1>
+            <p>Compliance report for <?php echo esc_html($formatted_date); ?></p>
+        </div>
+        
+        <h2>Hello <?php echo esc_html($user->display_name); ?>,</h2>
+        <p>Here's your age verification activity summary for today:</p>
+        
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-number"><?php echo intval($stats['total_calls']); ?></div>
+                <div>Total Checks</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number"><?php echo intval($stats['successful_calls']); ?></div>
+                <div>Passed</div>
+            </div>
+        </div>
+        
+        <?php if (!empty($detailed_logs)) : ?>
+        <h3>Verification Details</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Age</th>
+                    <th>Result</th>
+                    <th>ID Checked</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($detailed_logs as $log) : ?>
+                <tr>
+                    <td><?php echo date_i18n('g:i:s A', strtotime($log['check_time'])); ?></td>
+                    <td><?php echo intval($log['estimated_age']); ?></td>
+                    <td class="<?php echo ($log['alert_level'] == 'Pass' || $log['alert_level'] == 'Green') ? 'pass' : 'fail'; ?>">
+                        <?php echo esc_html($log['alert_level']); ?>
+                    </td>
+                    <td><?php echo $log['id_checked'] ? 'Yes' : 'No'; ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+        
+        <p style="margin-top: 40px; font-size: 12px; color: #6c757d;">
+            This is an automated compliance report. To unsubscribe, please update your preferences in your 
+            <a href="<?php echo esc_url($site_url . '/wp-admin/profile.php'); ?>">user profile</a>.
+        </p>
+    </body>
+    </html>
+    <?php
+    $body = ob_get_clean();
+    
+    // Get email settings
+    $from_name = get_option('age_estimator_email_from_name', get_bloginfo('name'));
+    $from_email = get_option('age_estimator_email_from_address', get_option('admin_email'));
+    
+    // Set headers
+    $headers = array(
+        'Content-Type: text/html; charset=UTF-8',
+        'From: ' . $from_name . ' <' . $from_email . '>'
+    );
+    
+    // Send email
+    return wp_mail($user->user_email, $subject, $body, $headers);
+}
+
+// Add manual trigger for testing
+add_action('admin_init', function() {
+    if (isset($_GET['test_compliance_email']) && current_user_can('manage_options')) {
+        $count = age_estimator_fixed_send_daily_emails();
+        wp_die('Sent ' . $count . ' compliance emails. <a href="' . admin_url('admin.php?page=age-estimator-email-settings') . '">Back to settings</a>');
+    }
+});

@@ -1,0 +1,260 @@
+/* Age Averaging Feature Styles */
+/* Add these to your existing CSS file or create a new one */
+
+/* Averaging Progress Display */
+#age-estimator-averaging-progress {
+    background: rgba(0, 0, 0, 0.9) !important;
+    border: 2px solid #2196F3;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.3s ease-in;
+    z-index: 1000;
+}
+
+#age-estimator-averaging-progress strong {
+    color: #2196F3;
+    font-size: 16px;
+}
+
+/* Progress bar animation */
+#age-estimator-averaging-progress .progress-bar {
+    background: linear-gradient(90deg, #1976D2 0%, #2196F3 50%, #42A5F5 100%);
+    animation: progress-pulse 1s ease-in-out infinite;
+}
+
+@keyframes progress-pulse {
+    0%, 100% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Averaged Result Styling */
+.averaged-result {
+    position: relative;
+    background: linear-gradient(135deg, rgba(33, 150, 243, 0.05) 0%, rgba(33, 150, 243, 0.02) 100%) !important;
+    border: 2px solid #2196F3 !important;
+    animation: resultSlideIn 0.5s ease-out;
+}
+
+@keyframes resultSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.averaged-result .averaging-indicator {
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.averaged-age-result .primary-result {
+    background: rgba(33, 150, 243, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+.averaged-age-result .age-display {
+    font-size: 18px;
+    margin: 10px 0;
+}
+
+.averaged-age-result .age-display strong {
+    color: #1976D2;
+    font-size: 32px;
+    display: block;
+    margin-top: 5px;
+}
+
+.averaging-details {
+    background: rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #2196F3;
+    font-family: 'Courier New', monospace;
+    position: relative;
+    overflow: hidden;
+}
+
+.averaging-details::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #1976D2 0%, #2196F3 50%, #42A5F5 100%);
+    animation: borderPulse 2s ease-in-out infinite;
+}
+
+@keyframes borderPulse {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.averaging-details strong {
+    color: #1976D2;
+    font-weight: bold;
+}
+
+.averaging-details p {
+    line-height: 1.6;
+}
+
+/* Sample collection animation */
+.sample-collection-flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle, rgba(33, 150, 243, 0.3) 0%, transparent 70%);
+    animation: sample-flash 0.5s ease-out;
+    pointer-events: none;
+    z-index: 999;
+}
+
+@keyframes sample-flash {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.1);
+    }
+}
+
+/* Age samples display in progress */
+#age-estimator-averaging-progress span[style*="background: #2196F3"] {
+    display: inline-block;
+    animation: sample-appear 0.3s ease-out;
+}
+
+@keyframes sample-appear {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.8);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #age-estimator-averaging-progress {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        width: auto !important;
+        min-width: unset !important;
+        font-size: 13px;
+    }
+    
+    .averaging-details {
+        font-size: 12px;
+        padding: 8px;
+    }
+    
+    .averaged-age-result .age-display strong {
+        font-size: 24px;
+    }
+}
+
+/* Integration with existing age gate results */
+.averaged-result .age-gate-result.passed {
+    background-color: rgba(76, 175, 80, 0.1);
+    border-color: #4CAF50;
+}
+
+.averaged-result .age-gate-result.failed {
+    background-color: rgba(244, 67, 54, 0.1);
+    border-color: #f44336;
+}
+
+/* Loading state during sample collection */
+.age-estimator-photo-camera.collecting-samples {
+    position: relative;
+}
+
+.age-estimator-photo-camera.collecting-samples::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 3px solid #2196F3;
+    border-radius: 8px;
+    animation: collectingPulse 1s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes collectingPulse {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.02);
+    }
+}
+
+/* Hover effects */
+.averaged-result:hover {
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+.averaging-details:hover {
+    background: rgba(33, 150, 243, 0.05);
+}
+
+/* Print styles */
+@media print {
+    #age-estimator-averaging-progress {
+        display: none !important;
+    }
+    
+    .averaged-result {
+        border: 1px solid #000 !important;
+        background: white !important;
+    }
+    
+    .averaging-indicator {
+        color: black !important;
+        background: white !important;
+        border: 1px solid black !important;
+    }
+}

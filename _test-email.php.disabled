@@ -1,0 +1,138 @@
+<?php
+/**
+ * Simple email test for Age Estimator
+ * Visit: https://yourdomain.com/wp-content/plugins/Age-estimator-live/test-email.php
+ */
+
+// Load WordPress
+require_once('../../../../wp-load.php');
+
+// Check if user is admin
+if (!current_user_can('manage_options')) {
+    die('Access denied - Admin only');
+}
+
+$current_user = wp_get_current_user();
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Age Estimator Email Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { background: #f0f0f0; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Age Estimator Email Test</h1>
+    
+    <div class="info">
+        <h3>Current Configuration:</h3>
+        <ul>
+            <li><strong>Admin Email:</strong> <?php echo get_option('admin_email'); ?></li>
+            <li><strong>From Name:</strong> <?php echo get_option('age_estimator_email_from_name', get_bloginfo('name')); ?></li>
+            <li><strong>From Email:</strong> <?php echo get_option('age_estimator_email_from_address', get_option('admin_email')); ?></li>
+            <li><strong>Current User:</strong> <?php echo $current_user->display_name; ?> (<?php echo $current_user->user_email; ?>)</li>
+        </ul>
+    </div>
+    
+    <?php
+    if (isset($_POST['send_test'])) {
+        // Send a simple test email
+        $to = $current_user->user_email;
+        $subject = 'Age Estimator Test Email';
+        $message = '<html><body>';
+        $message .= '<h2>This is a test email from Age Estimator</h2>';
+        $message .= '<p>If you received this email, your WordPress email configuration is working correctly.</p>';
+        $message .= '<p>Sent at: ' . current_time('mysql') . '</p>';
+        $message .= '<p>WordPress Site: ' . get_bloginfo('name') . '</p>';
+        $message .= '</body></html>';
+        
+        $headers = array(
+            'Content-Type: text/html; charset=UTF-8',
+            'From: ' . get_option('age_estimator_email_from_name', get_bloginfo('name')) . ' <' . get_option('age_estimator_email_from_address', get_option('admin_email')) . '>'
+        );
+        
+        $sent = wp_mail($to, $subject, $message, $headers);
+        
+        if ($sent) {
+            echo '<p class="success">✓ Test email sent successfully to ' . $to . '</p>';
+        } else {
+            echo '<p class="error">✗ Failed to send test email. Check your WordPress/SMTP configuration.</p>';
+        }
+    }
+    
+    if (isset($_POST['check_data'])) {
+        global $wpdb;
+        
+        echo '<div class="info">';
+        echo '<h3>Database Check Results:</h3>';
+        
+        // Check compliance checks table
+        $checks_table = $wpdb->prefix . 'age_estimator_checks';
+        $today = current_time('Y-m-d');
+        $today_checks = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$checks_table} WHERE DATE(check_time) = %s",
+            $today
+        ));
+        echo '<p><strong>Compliance Checks Today:</strong> ' . $today_checks . '</p>';
+        
+        // Check API calls table
+        $api_table = $wpdb->prefix . 'age_estimator_api_calls';
+        if ($wpdb->get_var("SHOW TABLES LIKE '$api_table'") == $api_table) {
+            $today_calls = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$api_table} WHERE call_date = %s",
+                $today
+            ));
+            echo '<p><strong>API Calls Today:</strong> ' . $today_calls . '</p>';
+        } else {
+            echo '<p class="error">API Calls table does not exist!</p>';
+        }
+        
+        // Show recent compliance checks
+        $recent_checks = $wpdb->get_results(
+            "SELECT * FROM {$checks_table} ORDER BY check_time DESC LIMIT 5"
+        );
+        
+        if (!empty($recent_checks)) {
+            echo '<h4>Recent Compliance Checks:</h4>';
+            echo '<table border="1" cellpadding="5">';
+            echo '<tr><th>Time</th><th>User</th><th>Age</th><th>Result</th></tr>';
+            foreach ($recent_checks as $check) {
+                echo '<tr>';
+                echo '<td>' . $check->check_time . '</td>';
+                echo '<td>' . ($check->staff_member ?: 'User ID: ' . $check->user_id) . '</td>';
+                echo '<td>' . $check->estimated_age . '</td>';
+                echo '<td>' . $check->alert_level . '</td>';
+                echo '</tr>';
+            }
+            echo '</table>';
+        }
+        
+        echo '</div>';
+    }
+    ?>
+    
+    <form method="post">
+        <p>
+            <button type="submit" name="send_test">Send Test Email</button>
+            <button type="submit" name="check_data">Check Database Data</button>
+        </p>
+    </form>
+    
+    <hr>
+    
+    <h3>Quick Fix Instructions:</h3>
+    <ol>
+        <li>Add this line to your theme's <code>functions.php</code>:
+            <pre>require_once(WP_PLUGIN_DIR . '/Age-estimator-live/compliance-email-fix.php');</pre>
+        </li>
+        <li>Test by visiting: <a href="<?php echo admin_url('admin.php?page=age-estimator-email-settings&test_compliance_email=1'); ?>">Send Test Compliance Email</a></li>
+    </ol>
+    
+    <p><a href="<?php echo admin_url('admin.php?page=age-estimator-email-settings'); ?>">← Back to Email Settings</a></p>
+</body>
+</html>

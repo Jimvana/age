@@ -1,0 +1,104 @@
+<?php
+/**
+ * Quick test to verify email functionality
+ * 
+ * Add this to your theme's functions.php temporarily or visit:
+ * yoursite.com/wp-admin/?test_age_estimator_emails=1
+ */
+
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// Check if the Age Estimator plugin is active
+if (!defined('AGE_ESTIMATOR_VERSION')) {
+    return;
+}
+
+add_action('admin_init', function() {
+    if (isset($_GET['test_age_estimator_emails']) && current_user_can('manage_options')) {
+        
+        // Test 1: Check if classes are loaded
+        echo "<h2>Age Estimator Email System Test</h2>";
+        echo "<pre>";
+        
+        echo "1. Checking if classes are loaded:\n";
+        echo "   - AgeEstimatorAPITracker: " . (class_exists('AgeEstimatorAPITracker') ? '✅ Loaded' : '❌ Not loaded') . "\n";
+        echo "   - AgeEstimatorComplianceEmailer: " . (class_exists('AgeEstimatorComplianceEmailer') ? '✅ Loaded' : '❌ Not loaded') . "\n";
+        echo "   - AgeEstimatorAdminEmailSettings: " . (class_exists('AgeEstimatorAdminEmailSettings') ? '✅ Loaded' : '❌ Not loaded') . "\n\n";
+        
+        // Test 2: Check database
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'age_estimator_api_calls';
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") === $table_name;
+        
+        echo "2. Database check:\n";
+        echo "   - Table exists: " . ($table_exists ? '✅ Yes' : '❌ No') . "\n";
+        
+        if ($table_exists) {
+            $total_records = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
+            $recent_dates = $wpdb->get_results("
+                SELECT call_date, COUNT(*) as count, COUNT(DISTINCT user_id) as users 
+                FROM {$table_name} 
+                GROUP BY call_date 
+                ORDER BY call_date DESC 
+                LIMIT 5
+            ");
+            
+            echo "   - Total records: {$total_records}\n";
+            echo "   - Recent activity:\n";
+            foreach ($recent_dates as $date) {
+                echo "     * {$date->call_date}: {$date->count} calls from {$date->users} users\n";
+            }
+        }
+        
+        echo "\n3. Email settings:\n";
+        echo "   - Send emails enabled: " . get_option('age_estimator_send_compliance_emails', 'yes') . "\n";
+        echo "   - From name: " . get_option('age_estimator_email_from_name', get_bloginfo('name')) . "\n";
+        echo "   - From email: " . get_option('age_estimator_email_from_address', get_option('admin_email')) . "\n";
+        echo "   - Current time: " . current_time('Y-m-d H:i:s') . "\n";
+        echo "   - Timezone: " . wp_timezone_string() . "\n";
+        
+        echo "\n4. Current user check:\n";
+        $current_user = wp_get_current_user();
+        echo "   - User ID: " . $current_user->ID . "\n";
+        echo "   - Email: " . $current_user->user_email . "\n";
+        echo "   - Display name: " . $current_user->display_name . "\n";
+        
+        // Test 5: Try to send a test email
+        echo "\n5. Email test:\n";
+        if (class_exists('AgeEstimatorComplianceEmailer')) {
+            $emailer = AgeEstimatorComplianceEmailer::get_instance();
+            
+            // Create test data
+            $test_sent = wp_mail(
+                $current_user->user_email,
+                'Age Estimator Test Email',
+                'This is a test email from the Age Estimator plugin. If you receive this, your email configuration is working correctly.',
+                array('Content-Type: text/html; charset=UTF-8')
+            );
+            
+            echo "   - Basic wp_mail test: " . ($test_sent ? '✅ Sent' : '❌ Failed') . "\n";
+            
+            // Try the plugin's test email
+            $plugin_test = $emailer->send_test_email($current_user->ID);
+            echo "   - Plugin test email: " . ($plugin_test ? '✅ Sent' : '❌ Failed') . "\n";
+        }
+        
+        echo "\n6. Scheduled events:\n";
+        $next_scheduled = wp_next_scheduled('age_estimator_send_daily_compliance_emails');
+        if ($next_scheduled) {
+            echo "   - Next scheduled: " . date_i18n('Y-m-d H:i:s', $next_scheduled) . "\n";
+        } else {
+            echo "   - ❌ No scheduled event found\n";
+        }
+        
+        echo "</pre>";
+        
+        echo '<p><a href="' . admin_url('admin.php?page=age-estimator-email-settings') . '" class="button">Go to Email Settings</a></p>';
+        echo '<p><a href="' . admin_url('admin.php?page=age-estimator-email-debug') . '" class="button">Go to Email Debug</a></p>';
+        
+        die();
+    }
+});

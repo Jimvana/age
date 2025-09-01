@@ -1,0 +1,67 @@
+# QUICK FIX INSTRUCTIONS
+
+## The Problem
+Your compliance emails aren't sending because the email system is looking in the wrong database table for user activity.
+
+## Immediate Solution (5 minutes)
+
+### 1. Test Your Email System First
+Visit: `https://yourdomain.com/wp-content/plugins/Age-estimator-live/test-email.php`
+- Click "Send Test Email" to verify WordPress can send emails
+- Click "Check Database Data" to see your compliance checks
+
+### 2. Apply The Fix
+Add these lines to your theme's `functions.php` file:
+
+```php
+// Fix Age Estimator compliance emails
+if (file_exists(WP_PLUGIN_DIR . '/Age-estimator-live/compliance-email-fix.php')) {
+    require_once(WP_PLUGIN_DIR . '/Age-estimator-live/compliance-email-fix.php');
+}
+
+// Optional: Bridge compliance checks to API tracking
+if (file_exists(WP_PLUGIN_DIR . '/Age-estimator-live/compliance-api-bridge.php')) {
+    require_once(WP_PLUGIN_DIR . '/Age-estimator-live/compliance-api-bridge.php');
+}
+```
+
+### 3. Sync Existing Data (Optional)
+If you want to sync today's compliance checks to enable emails:
+Visit: `https://yourdomain.com/wp-admin/admin.php?page=age-estimator-email-settings&age_estimator_sync_compliance=1`
+
+### 4. Test Email Sending
+Go to Age Estimator → Email Settings and click "Force Send Today's Emails Now"
+
+## What This Fix Does
+
+1. **Corrects the database query** - Looks in the compliance checks table instead of API calls table
+2. **Matches users properly** - Finds WordPress users by their display name in compliance checks
+3. **Sends formatted emails** - Creates proper email reports from compliance check data
+
+## Requirements for Emails to Send
+
+1. **WordPress users must exist** - The person doing age checks must be a WordPress user
+2. **Valid email addresses** - Users must have email addresses in their WordPress profile
+3. **User identification** - Either:
+   - Users are logged in when doing checks (user_id is recorded)
+   - OR staff names in checks match WordPress user display names
+
+## Troubleshooting
+
+If emails still don't send:
+
+1. **Check WP Mail SMTP** - Make sure test emails work from the SMTP plugin
+2. **Verify user data** - Check that compliance checks have either:
+   - A valid user_id (for logged-in users)
+   - A staff_member name that matches a WordPress user's display name
+3. **Check email logs** - Look at the Recent Email Logs section to see what was attempted
+
+## Need More Help?
+
+Use the debug tool: `https://yourdomain.com/wp-content/plugins/Age-estimator-live/debug-email.php`
+
+This will show you:
+- Email configuration
+- Today's database activity
+- Which users are eligible for emails
+- Why emails might not be sending

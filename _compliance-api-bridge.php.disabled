@@ -1,0 +1,142 @@
+<?php
+/**
+ * Bridge between compliance checks and API tracking
+ * This ensures compliance checks are also tracked as API calls for email purposes
+ */
+
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// Check if the Age Estimator plugin is active
+if (!defined('AGE_ESTIMATOR_VERSION')) {
+    return;
+}
+
+/* 
+ * Add this to your theme's functions.php
+ */
+
+// Hook into compliance check saving to also track as API call
+add_action('age_estimator_compliance_check_saved', 'age_estimator_bridge_to_api_tracker', 10, 2);
+
+function age_estimator_bridge_to_api_tracker($check_id, $check_data) {
+    // Get the API tracker instance
+    if (class_exists('AgeEstimatorAPITracker')) {
+        $tracker = AgeEstimatorAPITracker::get_instance();
+        
+        // Prepare data for API tracking
+        $api_data = array(
+            'user_id' => isset($check_data['user_id']) ? $check_data['user_id'] : get_current_user_id(),
+            'face_count' => 1,
+            'response_status' => ($check_data['alert_level'] == 'Pass' || $check_data['alert_level'] == 'Green') ? 'success' : 'failed',
+            'error_message' => ($check_data['alert_level'] == 'Fail' || $check_data['alert_level'] == 'Red') ? 'Age verification failed' : null
+        );
+        
+        // Track the API call
+        $tracker->track_api_call($api_data);
+    }
+}
+
+// Also hook into AJAX handler to ensure tracking
+add_action('wp_ajax_age_estimator_save_check', function() {
+    // Original AJAX handler runs first
+}, 5); // Lower priority to run before the original
+
+add_action('wp_ajax_nopriv_age_estimator_save_check', function() {
+    // Original AJAX handler runs first
+}, 5);
+
+// Add filter to ensure user tracking in compliance checks
+add_filter('age_estimator_check_data_before_save', function($data) {
+    // If no user_id is set but user is logged in, add it
+    if (empty($data['user_id']) && is_user_logged_in()) {
+        $data['user_id'] = get_current_user_id();
+    }
+    
+    // If staff_member is empty but user is logged in, add display name
+    if (empty($data['staff_member']) && is_user_logged_in()) {
+        $current_user = wp_get_current_user();
+        $data['staff_member'] = $current_user->display_name;
+    }
+    
+    return $data;
+});
+
+// Add a manual sync function to migrate existing compliance checks to API calls
+function age_estimator_sync_compliance_to_api($date = null) {
+    global $wpdb;
+    
+    if (!$date) {
+        $date = current_time('Y-m-d');
+    }
+    
+    $checks_table = $wpdb->prefix . 'age_estimator_checks';
+    $api_table = $wpdb->prefix . 'age_estimator_api_calls';
+    
+    // Get all compliance checks for the date
+    $checks = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM {$checks_table} WHERE DATE(check_time) = %s",
+        $date
+    ));
+    
+    $synced = 0;
+    $tracker = AgeEstimatorAPITracker::get_instance();
+    
+    foreach ($checks as $check) {
+        // Check if this check is already tracked
+        $exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$api_table} 
+             WHERE user_id = %d 
+             AND call_time BETWEEN %s AND DATE_ADD(%s, INTERVAL 1 SECOND)",
+            $check->user_id,
+            $check->check_time,
+            $check->check_time
+        ));
+        
+        if (!$exists) {
+            // Track this check as an API call
+            $api_data = array(
+                'user_id' => $check->user_id,
+                'call_date' => date('Y-m-d', strtotime($check->check_time)),
+                'call_time' => $check->check_time,
+                'face_count' => 1,
+                'response_status' => ($check->alert_level == 'Pass' || $check->alert_level == 'Green') ? 'success' : 'failed',
+                'session_id' => $check->session_id ?: ''
+            );
+            
+            if ($tracker->track_api_call($api_data)) {
+                $synced++;
+            }
+        }
+    }
+    
+    return $synced;
+}
+
+// Add admin notice if sync is needed
+add_action('admin_notices', function() {
+    if (isset($_GET['age_estimator_sync_done'])) {
+        $count = intval($_GET['age_estimator_sync_done']);
+        ?>
+        <div class="notice notice-success is-dismissible">
+            <p>Age Estimator: Synced <?php echo $count; ?> compliance checks to API tracking.</p>
+        </div>
+        <?php
+    }
+});
+
+// Add sync action
+add_action('admin_init', function() {
+    if (isset($_GET['age_estimator_sync_compliance']) && current_user_can('manage_options')) {
+        $date = isset($_GET['date']) ? sanitize_text_field($_GET['date']) : null;
+        $synced = age_estimator_sync_compliance_to_api($date);
+        
+        wp_redirect(add_query_arg(array(
+            'page' => 'age-estimator-email-settings',
+            'age_estimator_sync_done' => $synced
+        ), admin_url('admin.php')));
+        exit;
+    }
+});
